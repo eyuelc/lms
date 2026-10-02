@@ -27,6 +27,8 @@ import Table from '@editorjs/table'
 import DOMPurify from 'dompurify'
 import { decodeEntities } from './inertHtml'
 import { Audio } from '@/utils/audio'
+import { CodingProblem } from '@/utils/codingProblem'
+
 
 const readOnlyMode = window.read_only_mode
 
@@ -164,6 +166,10 @@ export function getEditorTools(
 		},
 		audio: {
 			class: Audio,
+			config: uploadContext,
+		},
+		codingProblem: {
+			class: CodingProblem,
 			config: uploadContext,
 		},
 		table: {

@@ -1,0 +1,104 @@
+import CodingProblemComponent from '@/components/CodingProblem.vue'
+import { createApp, h } from 'vue'
+import { Code2 } from 'lucide-vue-next'
+import { registerDirectives } from '@/directives'
+import translationPlugin from '../translation'
+
+export class CodingProblem {
+	constructor({ data, config, readOnly }) {
+		this.data = data || {}
+		this.config = config || {}
+		this.readOnly = readOnly
+	}
+
+	static get toolbox() {
+		const app = createApp({
+			render: () =>
+				h(Code2, {
+					size: 18,
+					strokeWidth: 1.5,
+				}),
+		})
+
+		registerDirectives(app)
+
+		const div = document.createElement('div')
+		app.mount(div)
+
+		return {
+			title: 'Coding Problem',
+			icon: div.innerHTML,
+		}
+	}
+
+	static get isReadOnlySupported() {
+		return true
+	}
+
+	render() {
+		this.wrapper = document.createElement('div')
+
+		if (this.data.problem) {
+			this.renderProblem()
+		} else if (!this.readOnly) {
+			this.renderSelector()
+		}
+
+		return this.wrapper
+	}
+
+	renderProblem() {
+		const app = createApp(CodingProblemComponent, {
+			problem: this.data.problem,
+		})
+
+		registerDirectives(app)
+		app.use(translationPlugin)
+		app.mount(this.wrapper)
+
+		this.app = app
+	}
+
+	renderSelector() {
+		this.wrapper.innerHTML = `
+			<div class="border rounded-lg p-4 bg-white">
+				<div class="text-sm font-medium mb-2">
+					Coding Problem
+				</div>
+
+				<input
+					type="text"
+					class="coding-problem-input w-full border rounded px-3 py-2"
+					placeholder="Enter problem slug, e.g. add-22"
+				/>
+			</div>
+		`
+
+		const input = this.wrapper.querySelector(
+			'.coding-problem-input'
+		)
+
+		input.value = this.data.problem || ''
+
+		input.addEventListener('input', (event) => {
+			this.data.problem = event.target.value.trim()
+		})
+	}
+
+	save() {
+		return {
+			problem: this.data.problem || '',
+		}
+	}
+
+	validate(savedData) {
+		return !!savedData.problem
+	}
+
+	destroy() {
+		if (this.app) {
+			this.app.unmount()
+			this.app = null
+		}
+	}
+}
