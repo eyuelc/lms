@@ -26,6 +26,7 @@ import SimpleImage from '@editorjs/simple-image'
 import Table from '@editorjs/table'
 import DOMPurify from 'dompurify'
 import { decodeEntities } from './inertHtml'
+import { Audio } from '@/utils/audio'
 
 const readOnlyMode = window.read_only_mode
 
@@ -159,6 +160,10 @@ export function getEditorTools(
 		},
 		upload: {
 			class: Upload,
+			config: uploadContext,
+		},
+		audio: {
+			class: Audio,
 			config: uploadContext,
 		},
 		table: {
