@@ -553,6 +553,18 @@ const getSidebarItems = (forMobile = false) => {
 					},
 				},
 				{
+					label: 'Problems',
+					icon: 'Code',
+					to: 'http://lms.localhost:8002/list-problems',
+					activeFor: [],
+				},
+				{
+					label: 'Contests',
+					icon: 'Trophy',
+					to: 'http://lms.localhost:8002/contest-page',
+					activeFor: [],
+				},
+				{
 					label: 'Batches',
 					icon: 'Users',
 					to: 'Batches',
@@ -578,6 +590,13 @@ const getSidebarItems = (forMobile = false) => {
 					icon: 'TrendingUp',
 					to: 'Statistics',
 					activeFor: ['Statistics'],
+				},
+				
+				{
+					label: 'Leaderboard',
+					icon: 'BarChart3',
+					to: 'http://lms.localhost:8002/leaderboard',
+					activeFor: [],
 				},
 				{
 					label: 'Contact Us',

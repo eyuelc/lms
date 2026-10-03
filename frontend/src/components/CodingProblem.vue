@@ -229,11 +229,36 @@
 								<button
 									type="button"
 									role="tab"
+									:aria-selected="activeTab === 'solution'"
+									:class="{ 'is-active': activeTab === 'solution' }"
+									@click="selectSolutionTab"
+								>
+									<svg
+										class="cp-solution-tab-icon"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.8"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"
+									>
+										<path d="M9 3h6" />
+										<path d="M10 3v4l-4.5 8.5A3.5 3.5 0 0 0 8.6 21h6.8a3.5 3.5 0 0 0 3.1-5.5L14 7V3" />
+										<path d="M8 14h8" />
+										<path d="M9.5 17h5" />
+									</svg>
+									{{ __("Solution") }}
+								</button>
+
+								<button
+									type="button"
+									role="tab"
 									:aria-selected="activeTab === 'testcase'"
 									:class="{ 'is-active': activeTab === 'testcase' }"
 									@click="activeTab = 'testcase'"
 								>
-									<span class="cp-green">☑</span>
+									<span class="cp-green cp-tab-glyph">☑</span>
 									{{ __("Testcase") }}
 								</button>
 
@@ -244,7 +269,7 @@
 									:class="{ 'is-active': activeTab === 'result' }"
 									@click="activeTab = 'result'"
 								>
-									<span class="cp-green">&gt;_</span>
+									<span class="cp-green cp-tab-glyph">&gt;_</span>
 									{{ __("Test Result") }}
 								</button>
 							</div>
@@ -259,7 +284,127 @@
 						</div>
 
 						<div class="cp-terminal-body">
-							<div v-if="activeTab === 'testcase'" class="cp-testcase">
+							<div v-if="activeTab === 'solution'" class="cp-solution-output">
+								<div
+									v-if="solutionLoading"
+									class="cp-solution-state"
+									role="status"
+									aria-live="polite"
+								>
+									<svg
+										class="cp-solution-state-icon"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.8"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"
+									>
+										<path d="M9 3h6" />
+										<path d="M10 3v4l-4.5 8.5A3.5 3.5 0 0 0 8.6 21h6.8a3.5 3.5 0 0 0 3.1-5.5L14 7V3" />
+										<path d="M8 14h8" />
+										<path d="M9.5 17h5" />
+									</svg>
+									<strong>{{ __("Opening solution…") }}</strong>
+									<span>{{ __("Please wait") }}</span>
+									<span class="cp-solution-spinner" aria-hidden="true"></span>
+								</div>
+
+								<div
+									v-else-if="solutionError"
+									class="cp-solution-state is-error"
+									role="alert"
+								>
+									<strong>{{ solutionErrorTitle }}</strong>
+									<p>{{ solutionError }}</p>
+									<button
+										v-if="solutionErrorKind !== 'unavailable'"
+										type="button"
+										class="cp-solution-button"
+										@click="retrySolution"
+									>
+										{{ __("Retry") }}
+									</button>
+								</div>
+
+								<div
+									v-else-if="solutionUnlocked && solutionContent"
+									class="cp-solution-viewer"
+								>
+									<div class="cp-solution-header">
+										<div>
+											<div class="cp-solution-title">
+												<svg
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="1.8"
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													aria-hidden="true"
+												>
+													<path d="M9 3h6" />
+													<path d="M10 3v4l-4.5 8.5A3.5 3.5 0 0 0 8.6 21h6.8a3.5 3.5 0 0 0 3.1-5.5L14 7V3" />
+													<path d="M8 14h8" />
+													<path d="M9.5 17h5" />
+												</svg>
+												{{ __("Official Solution") }}
+											</div>
+											<div class="cp-solution-subtitle">
+												{{ __("Editorial implementation") }}
+											</div>
+										</div>
+
+										<span class="cp-solution-language">{{ solutionLanguageLabel }}</span>
+									</div>
+
+									<div
+										class="cp-solution-code"
+										tabindex="0"
+										role="region"
+										:aria-label="__('Official solution code')"
+									><pre><code>{{ solutionContent }}</code></pre></div>
+								</div>
+
+								<div v-else class="cp-solution-state">
+									<svg
+										class="cp-solution-state-icon"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="1.8"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										aria-hidden="true"
+									>
+										<path d="M9 3h6" />
+										<path d="M10 3v4l-4.5 8.5A3.5 3.5 0 0 0 8.6 21h6.8a3.5 3.5 0 0 0 3.1-5.5L14 7V3" />
+										<path d="M8 14h8" />
+										<path d="M9.5 17h5" />
+									</svg>
+									<strong>{{
+										solutionFree
+											? __("Official Solution")
+											: __("Official Solution is locked")
+									}}</strong>
+									<span v-if="!solutionFree && solutionCost > 0">
+										{{ __("Unlock it once for") }} {{ solutionCost }} XP
+									</span>
+									<span v-else-if="solutionFree && problem.solved && !solutionUnlocked">
+										{{ __("Free — you already solved this problem") }}
+									</span>
+									<button
+										type="button"
+										class="cp-solution-button is-primary"
+										@click="solutionFree ? requestSolution() : openSolutionConfirm()"
+									>
+										{{ solutionFree ? __("View Solution") : __("Unlock Solution") }}
+									</button>
+								</div>
+							</div>
+
+							<div v-else-if="activeTab === 'testcase'" class="cp-testcase">
 								<div class="cp-case-tabs">
 									<button
 										v-for="(testCase, index) in testCases"
@@ -388,11 +533,139 @@
 				</div>
 			</template>
 		</div>
+
+		<Teleport to="body">
+			<Transition name="dsa-xp-toast">
+				<div
+					v-if="xpToast"
+					class="dsa-xp-toast"
+					role="status"
+					aria-live="polite"
+					@click="dismissXpToast"
+				>
+					<span class="dsa-xp-toast-icon" aria-hidden="true">★</span>
+					<div class="dsa-xp-toast-body">
+						<strong>+{{ xpToast.gained }} XP</strong>
+						<span>{{ __("Total XP") }}: {{ xpToast.total }}</span>
+					</div>
+				</div>
+			</Transition>
+		</Teleport>
+
+		<Teleport to="body">
+			<Transition name="cp-solution-modal-fade">
+				<div
+					v-if="showSolutionConfirm"
+					class="cp-solution-modal-backdrop"
+					@click.self="closeSolutionConfirm"
+					@keydown.esc="closeSolutionConfirm"
+				>
+					<div
+						class="cp-solution-modal"
+						role="dialog"
+						aria-modal="true"
+						aria-labelledby="cp-solution-modal-title"
+					>
+						<div class="cp-solution-modal-icon">
+							<svg
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.8"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M9 3h6" />
+								<path d="M10 3v4l-4.5 8.5A3.5 3.5 0 0 0 8.6 21h6.8a3.5 3.5 0 0 0 3.1-5.5L14 7V3" />
+								<path d="M8 14h8" />
+								<path d="M9.5 17h5" />
+							</svg>
+						</div>
+
+						<h2 id="cp-solution-modal-title">{{ __("Official Solution") }}</h2>
+
+						<p class="cp-solution-modal-lead">
+							{{
+								solutionCost > 0
+									? __("Opening this solution costs")
+									: __("Opening this solution is free")
+							}}
+						</p>
+
+						<div v-if="solutionCost > 0" class="cp-solution-modal-cost">
+							{{ solutionCost }}<span>XP</span>
+						</div>
+
+						<p v-if="xpLoaded" class="cp-solution-modal-balance">
+							{{ __("Your current XP") }}: <strong>{{ xpTotal }}</strong>
+						</p>
+
+						<p class="cp-solution-modal-note">
+							{{
+								solutionCost > 0
+									? __("You only pay once for this problem.")
+									: __("No XP will be spent. You can reopen it any time.")
+							}}
+						</p>
+
+						<p v-if="solutionForfeitsXp" class="cp-solution-modal-warning">
+							{{ __("Opening the solution before solving this problem means solving it will not award its") }}
+							{{ problem?.xp_reward }} XP.
+						</p>
+
+						<div
+							v-if="solutionInsufficientXp && !solutionError"
+							class="cp-solution-modal-error"
+							role="alert"
+						>
+							<strong>{{ __("Not enough XP") }}</strong>
+							<span>
+								{{ __("You don't have enough XP to open this solution.") }}
+								{{ __("You need") }} {{ solutionCost }} XP,
+								{{ __("but you only have") }} {{ xpTotal }} XP.
+							</span>
+						</div>
+
+						<div v-if="solutionError" class="cp-solution-modal-error" role="alert">
+							<strong>{{ solutionErrorTitle }}</strong>
+							<span>{{ solutionError }}</span>
+						</div>
+
+						<div class="cp-solution-modal-actions">
+							<button
+								ref="solutionCancelButton"
+								type="button"
+								class="cp-solution-button"
+								:disabled="solutionLoading"
+								@click="closeSolutionConfirm"
+							>
+								{{ __("Cancel") }}
+							</button>
+
+							<button
+								type="button"
+								class="cp-solution-button is-primary"
+								:disabled="solutionLoading || solutionInsufficientXp"
+								@click="confirmSolutionUnlock"
+							>
+								<span
+									v-if="solutionLoading"
+									class="cp-solution-spinner is-small"
+									aria-hidden="true"
+								></span>
+								{{ __("Unlock Solution") }}
+							</button>
+						</div>
+					</div>
+				</div>
+			</Transition>
+		</Teleport>
 	</div>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import MonacoEditor from "./MonacoEditor.vue";
 
 const props = defineProps({
@@ -444,6 +717,23 @@ const openSections = reactive({
 });
 
 const monacoEditor = ref(null);
+
+const xpToast = ref(null);
+const xpTotal = ref(0);
+const xpLoaded = ref(false);
+
+const solutionUnlocked = ref(false);
+const solutionLoading = ref(false);
+const solutionError = ref("");
+const solutionErrorKind = ref("");
+const solutionContent = ref("");
+const solutionLanguageId = ref(null);
+const showSolutionConfirm = ref(false);
+const solutionCancelButton = ref(null);
+let solutionRequestId = 0;
+
+const XP_TOAST_VISIBLE_MS = 4500;
+let xpToastTimer = null;
 
 const inputId = `cp-stdin-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -511,6 +801,14 @@ const xpLine = computed(() => {
 		return { tone: "muted", text: __("Already solved"), sub: "" };
 	}
 
+	if (xp.solution_first) {
+		return {
+			tone: "muted",
+			text: __("No XP awarded — the official solution was opened first"),
+			sub: "",
+		};
+	}
+
 	if (xp.error) {
 		return { tone: "error", text: xp.error, sub: "" };
 	}
@@ -533,6 +831,64 @@ const complexityRows = computed(() => {
 		{ label: __("Space Complexity"), value: complexity.space, result: complexity.spaceResult },
 	];
 });
+
+const solutionCost = computed(() => Math.max(0, Number(problem.value?.solution_xp_deduction) || 0));
+
+const solutionFree = computed(() => solutionUnlocked.value || Boolean(problem.value?.solved));
+
+const solutionInsufficientXp = computed(
+	() =>
+		xpLoaded.value &&
+		!solutionFree.value &&
+		solutionCost.value > 0 &&
+		xpTotal.value < solutionCost.value
+);
+
+const solutionForfeitsXp = computed(
+	() => Number(problem.value?.xp_reward) > 0 && !solutionFree.value
+);
+
+const solutionLanguageLabel = computed(
+	() =>
+		languages.find((language) => language.id === solutionLanguageId.value)?.label ||
+		languages.find((language) => language.id === languageId.value)?.label ||
+		languages[0].label
+);
+
+const solutionErrorTitle = computed(() => {
+	if (solutionErrorKind.value === "xp") return __("Not enough XP");
+	if (solutionErrorKind.value === "unavailable") return __("No solution available");
+	return __("Couldn't open the solution");
+});
+
+function dismissXpToast() {
+	clearTimeout(xpToastTimer);
+	xpToastTimer = null;
+	xpToast.value = null;
+}
+
+function showXpToast(gained, total) {
+	clearTimeout(xpToastTimer);
+	xpToast.value = { gained, total };
+	xpToastTimer = setTimeout(dismissXpToast, XP_TOAST_VISIBLE_MS);
+}
+
+function applyXpToast(result) {
+	const xp = result?.xp;
+
+	if (!xp) return;
+
+	const total = Number(xp.total);
+
+	if (Number.isFinite(total)) {
+		xpTotal.value = total;
+		xpLoaded.value = true;
+	}
+
+	if (result.status === "Accepted" && xp.awarded && Number(xp.gained) > 0) {
+		showXpToast(Number(xp.gained), Number.isFinite(total) ? total : 0);
+	}
+}
 
 function formatRuntime(runtime) {
 	const seconds = Number(runtime);
@@ -734,6 +1090,193 @@ function starterFor(id) {
 	);
 }
 
+function resetSolutionState() {
+	solutionRequestId += 1;
+	solutionUnlocked.value = false;
+	solutionLoading.value = false;
+	solutionError.value = "";
+	solutionErrorKind.value = "";
+	solutionContent.value = "";
+	solutionLanguageId.value = null;
+	showSolutionConfirm.value = false;
+}
+
+function solutionErrorMessage(err) {
+	const message = typeof err?.message === "string" ? err.message.trim() : "";
+
+	if (!message || err instanceof TypeError || /^DSA API request failed/.test(message)) {
+		return __("Could not open the solution. Please check your connection and try again.");
+	}
+
+	return message;
+}
+
+function solutionUnavailableMessage(id) {
+	const label = languages.find((language) => language.id === id)?.label || "";
+	return `${__("No official solution is available for")} ${label}.`;
+}
+
+async function loadXp() {
+	try {
+		const summary = await dsaApi("get_xp_summary");
+
+		if (disposed) return;
+
+		xpTotal.value = Number(summary?.total_xp) || 0;
+		xpLoaded.value = true;
+	} catch (err) {
+		console.error(err);
+	}
+}
+
+async function checkSolutionUnlock(problemName) {
+	if (!problemName) return;
+
+	try {
+		const result = await dsaApi("check_solution_unlock", { problem: problemName });
+
+		if (disposed || problem.value?.name !== problemName) return;
+
+		solutionUnlocked.value = Boolean(result?.unlocked);
+
+		if (
+			solutionUnlocked.value &&
+			activeTab.value === "solution" &&
+			!solutionLoading.value &&
+			!solutionContent.value
+		) {
+			showSolutionConfirm.value = false;
+			requestSolution();
+		}
+	} catch (err) {
+		console.error(err);
+	}
+}
+
+function openSolutionConfirm() {
+	solutionError.value = "";
+	solutionErrorKind.value = "";
+	showSolutionConfirm.value = true;
+}
+
+function closeSolutionConfirm() {
+	if (solutionLoading.value) return;
+
+	showSolutionConfirm.value = false;
+	solutionError.value = "";
+	solutionErrorKind.value = "";
+}
+
+function confirmSolutionUnlock() {
+	if (solutionLoading.value || solutionInsufficientXp.value) return;
+
+	requestSolution();
+}
+
+function retrySolution() {
+	if (solutionFree.value) {
+		requestSolution();
+	} else {
+		openSolutionConfirm();
+	}
+}
+
+function selectSolutionTab() {
+	activeTab.value = "solution";
+
+	if (solutionLoading.value) return;
+
+	if (!solutionFree.value) {
+		openSolutionConfirm();
+		return;
+	}
+
+	if (solutionContent.value && solutionLanguageId.value === languageId.value) {
+		solutionError.value = "";
+		solutionErrorKind.value = "";
+		return;
+	}
+
+	requestSolution();
+}
+
+async function requestSolution() {
+	if (!problem.value) return;
+
+	const problemName = problem.value.name;
+	const requestedLanguageId = languageId.value;
+	const requestId = ++solutionRequestId;
+
+	solutionLoading.value = true;
+	solutionError.value = "";
+	solutionErrorKind.value = "";
+
+	try {
+		const result = await dsaApi(
+			"open_solution",
+			{ problem: problemName, language_id: requestedLanguageId },
+			{ methodType: "POST" }
+		);
+
+		if (disposed || requestId !== solutionRequestId) return;
+
+		if (!result || typeof result.solution !== "string" || !result.solution.trim()) {
+			showSolutionConfirm.value = false;
+			solutionErrorKind.value = "unavailable";
+			solutionError.value = solutionUnavailableMessage(requestedLanguageId);
+			return;
+		}
+
+		solutionContent.value = result.solution;
+		solutionLanguageId.value = Number(result.language_id) || requestedLanguageId;
+		solutionUnlocked.value = true;
+
+		if (result.solved && problem.value) problem.value.solved = true;
+
+		showSolutionConfirm.value = false;
+		activeTab.value = "solution";
+
+		const remaining = Number(result.remaining_xp);
+
+		if (
+			result.remaining_xp !== null &&
+			result.remaining_xp !== undefined &&
+			Number.isFinite(remaining)
+		) {
+			xpTotal.value = remaining;
+			xpLoaded.value = true;
+		}
+
+		if (languageId.value !== requestedLanguageId) {
+			requestSolution();
+		}
+	} catch (err) {
+		if (disposed || requestId !== solutionRequestId) return;
+
+		const message = solutionErrorMessage(err);
+		let kind = "error";
+
+		if (/no official solution|unsupported programming language|not supported/i.test(message)) {
+			kind = "unavailable";
+		} else if (/\bxp\b/i.test(message)) {
+			kind = "xp";
+		}
+
+		solutionErrorKind.value = kind;
+
+		if (kind === "unavailable") {
+			showSolutionConfirm.value = false;
+			solutionError.value = solutionUnavailableMessage(requestedLanguageId);
+		} else {
+			solutionError.value = message;
+		}
+	} finally {
+		if (requestId === solutionRequestId) {
+			solutionLoading.value = false;
+		}
+	}
+}
+
 async function loadProblem() {
 	loading.value = true;
 	loadError.value = "";
@@ -763,6 +1306,10 @@ async function loadProblem() {
 		activeCaseIndex.value = 0;
 		activeTab.value = "testcase";
 		clearResults();
+
+		resetSolutionState();
+		checkSolutionUnlock(loaded.name);
+		loadXp();
 	} catch (err) {
 		if (disposed) return;
 
@@ -1003,9 +1550,11 @@ async function submitCode() {
 				);
 				activeResultCaseIndex.value = firstFailed === -1 ? 0 : firstFailed;
 
-				if (result.xp?.awarded || result.xp?.already_awarded) {
+				if (result.status === "Accepted") {
 					problem.value.solved = true;
 				}
+
+				applyXpToast(result);
 
 				return;
 			}
@@ -1030,9 +1579,29 @@ watch(
 	}
 );
 
+watch(languageId, () => {
+	if (solutionLoading.value) return;
+
+	solutionError.value = "";
+	solutionErrorKind.value = "";
+
+	if (activeTab.value === "solution" && solutionFree.value && problem.value) {
+		requestSolution();
+	}
+});
+
+watch(showSolutionConfirm, (isOpen) => {
+	if (isOpen) {
+		nextTick(() => solutionCancelButton.value?.focus());
+	}
+});
+
 onBeforeUnmount(() => {
 	disposed = true;
 	generation += 1;
+	solutionRequestId += 1;
+	clearTimeout(xpToastTimer);
+	xpToastTimer = null;
 });
 
 defineExpose({
@@ -1691,6 +2260,24 @@ defineExpose({
 	color: var(--cp-green);
 }
 
+.cp-tab-glyph {
+	font-family: var(--font-stack, inherit);
+	font-size: 12px;
+	font-variant-emoji: text;
+	line-height: 1;
+}
+
+.cp-solution-tab-icon {
+	width: 14px;
+	height: 14px;
+	flex-shrink: 0;
+	color: inherit;
+}
+
+.cp-result-tabs > button.is-active .cp-solution-tab-icon {
+	color: var(--cp-blue);
+}
+
 .cp-terminal-body {
 	position: relative;
 	max-height: 380px;
@@ -1940,6 +2527,425 @@ defineExpose({
 	color: var(--cp-red);
 }
 
+.cp-solution-output {
+	display: flex;
+	min-height: 120px;
+	flex-direction: column;
+	font-family: var(--font-stack, inherit);
+}
+
+.cp-solution-viewer {
+	display: flex;
+	min-height: 0;
+	flex: 1;
+	flex-direction: column;
+	overflow: hidden;
+	border: 1px solid var(--cp-border);
+	border-radius: 8px;
+	background: var(--cp-head-bg);
+}
+
+.cp-solution-header {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 9px 14px;
+	border-bottom: 1px solid var(--cp-border);
+	background: var(--cp-bg);
+}
+
+.cp-solution-title {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.cp-solution-title svg {
+	width: 15px;
+	height: 15px;
+	flex-shrink: 0;
+	color: var(--cp-blue);
+}
+
+.cp-solution-subtitle {
+	margin: 2px 0 0 22px;
+	color: var(--cp-muted);
+	font-size: 11px;
+}
+
+.cp-solution-language {
+	padding: 3px 10px;
+	border: 1px solid var(--cp-border);
+	border-radius: 999px;
+	background: var(--cp-head-bg);
+	color: var(--cp-blue);
+	font-size: 11px;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.cp-solution-code {
+	max-height: 300px;
+	min-height: 0;
+	flex: 1;
+	overflow: auto;
+	outline: none;
+}
+
+.cp-solution-code:focus-visible {
+	box-shadow: inset 0 0 0 2px var(--cp-focus);
+}
+
+.cp-terminal-body .cp-solution-code pre {
+	min-width: max-content;
+	margin: 0;
+	padding: 14px 16px;
+	overflow: visible;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	color: inherit;
+	font-family: var(--cp-mono);
+	font-size: 12.5px;
+	line-height: 1.65;
+	overflow-wrap: normal;
+	tab-size: 4;
+	white-space: pre;
+}
+
+.cp-terminal-body .cp-solution-code code {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	white-space: inherit;
+}
+
+.cp-solution-state {
+	display: flex;
+	min-height: 160px;
+	flex: 1;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	padding: 12px;
+	color: var(--cp-muted);
+	font-size: 12px;
+	text-align: center;
+}
+
+.cp-solution-state strong {
+	color: inherit;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.cp-solution-state p {
+	max-width: 380px;
+	margin: 0;
+	line-height: 1.5;
+}
+
+.cp-solution-state-icon {
+	width: 26px;
+	height: 26px;
+	color: var(--cp-blue);
+}
+
+.cp-solution-state.is-error strong {
+	color: var(--cp-red);
+}
+
+.cp-solution-spinner {
+	display: inline-block;
+	width: 22px;
+	height: 22px;
+	flex-shrink: 0;
+	margin-top: 6px;
+	border: 2px solid var(--cp-border);
+	border-top-color: var(--cp-blue);
+	border-radius: 50%;
+	animation: cp-solution-spin 0.8s linear infinite;
+}
+
+.cp-solution-spinner.is-small {
+	width: 12px;
+	height: 12px;
+	margin-top: 0;
+	border-color: currentColor;
+	border-top-color: transparent;
+	opacity: 0.8;
+}
+
+@keyframes cp-solution-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.cp-solution-button {
+	display: inline-flex;
+	height: 32px;
+	align-items: center;
+	justify-content: center;
+	gap: 7px;
+	margin-top: 6px;
+	padding: 0 16px;
+	border: 1px solid var(--cps-border, var(--cp-border));
+	border-radius: 7px;
+	background: var(--cps-control, var(--cp-head-bg));
+	color: var(--cps-text, inherit);
+	font-family: inherit;
+	font-size: 12px;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.cp-solution-button:hover:not(:disabled) {
+	background: var(--cps-hover, var(--cp-hover));
+}
+
+.cp-solution-button:focus-visible {
+	outline: 2px solid var(--cps-focus, var(--cp-focus));
+	outline-offset: 2px;
+}
+
+.cp-solution-button:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
+}
+
+.cp-solution-button.is-primary {
+	border-color: #2a62c4;
+	background: #2f6fe4;
+	color: #fff;
+}
+
+.cp-solution-button.is-primary:hover:not(:disabled) {
+	background: #3b7bf0;
+}
+
+.cp-solution-modal-backdrop {
+	--cps-border: var(--border-color, #3a3a3a);
+	--cps-bg: var(--card-bg, #1e1e1e);
+	--cps-control: var(--control-bg, #252525);
+	--cps-hover: var(--fg-hover-color, #303030);
+	--cps-text: var(--text-color, #e6e6e6);
+	--cps-muted: var(--text-muted, #999999);
+	--cps-blue: var(--text-on-blue, #6ea8fe);
+	--cps-orange: var(--text-on-orange, #f5b84b);
+	--cps-red: var(--text-on-red, #ff6b6b);
+	--cps-focus: var(--primary, var(--cps-blue));
+
+	position: fixed;
+	inset: 0;
+	z-index: 2100;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+	background: rgba(0, 0, 0, 0.55);
+}
+
+.cp-solution-modal {
+	display: flex;
+	width: min(400px, 100%);
+	flex-direction: column;
+	align-items: center;
+	padding: 28px 28px 22px;
+	border: 1px solid var(--cps-border);
+	border-radius: 14px;
+	background: var(--cps-bg);
+	box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+	color: var(--cps-text);
+	font-family: var(--font-stack, inherit);
+	font-size: 13px;
+	line-height: 1.5;
+	text-align: center;
+}
+
+.cp-solution-modal *,
+.cp-solution-modal *::before,
+.cp-solution-modal *::after {
+	box-sizing: border-box;
+}
+
+.cp-solution-modal-icon {
+	display: grid;
+	width: 56px;
+	height: 56px;
+	place-items: center;
+	margin-bottom: 14px;
+	border-radius: 50%;
+	background: rgba(75, 139, 245, 0.14);
+	color: var(--cps-blue);
+}
+
+.cp-solution-modal-icon svg {
+	width: 28px;
+	height: 28px;
+}
+
+.cp-solution-modal h2 {
+	margin: 0 0 14px;
+	color: var(--cps-text);
+	font-size: 18px;
+	font-weight: 650;
+}
+
+.cp-solution-modal-lead {
+	margin: 0;
+	color: var(--cps-muted);
+	font-size: 13px;
+}
+
+.cp-solution-modal-cost {
+	margin: 2px 0 8px;
+	color: var(--cps-orange);
+	font-size: 40px;
+	font-variant-numeric: tabular-nums;
+	font-weight: 700;
+	line-height: 1.2;
+}
+
+.cp-solution-modal-cost span {
+	margin-left: 6px;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.cp-solution-modal-balance {
+	margin: 0 0 10px;
+	color: var(--cps-muted);
+	font-size: 12px;
+}
+
+.cp-solution-modal-balance strong {
+	color: var(--cps-text);
+	font-variant-numeric: tabular-nums;
+}
+
+.cp-solution-modal-note {
+	max-width: 300px;
+	margin: 0 0 4px;
+	color: var(--cps-muted);
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.cp-solution-modal-warning {
+	max-width: 320px;
+	margin: 8px 0 0;
+	color: var(--cps-orange);
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.cp-solution-modal-error {
+	display: flex;
+	width: 100%;
+	flex-direction: column;
+	gap: 3px;
+	margin-top: 12px;
+	padding: 10px 12px;
+	border: 1px solid var(--cps-red);
+	border-radius: 8px;
+	background: rgba(220, 38, 38, 0.08);
+	font-size: 12px;
+	line-height: 1.45;
+	text-align: left;
+}
+
+.cp-solution-modal-error strong {
+	color: var(--cps-red);
+}
+
+.cp-solution-modal-actions {
+	display: flex;
+	width: 100%;
+	justify-content: center;
+	gap: 10px;
+	margin-top: 16px;
+}
+
+.cp-solution-modal-actions .cp-solution-button {
+	min-width: 120px;
+	margin-top: 0;
+}
+
+.cp-solution-modal-fade-enter-active,
+.cp-solution-modal-fade-leave-active {
+	transition: opacity 0.18s ease;
+}
+
+.cp-solution-modal-fade-enter-from,
+.cp-solution-modal-fade-leave-to {
+	opacity: 0;
+}
+
+.dsa-xp-toast {
+	position: fixed;
+	right: 20px;
+	bottom: 20px;
+	z-index: 2000;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-width: 190px;
+	padding: 12px 16px;
+	border: 1px solid var(--border-color, #3a3a3a);
+	border-left: 3px solid var(--text-on-orange, #f5b84b);
+	border-radius: 10px;
+	background: var(--card-bg, #1e1e1e);
+	color: var(--text-color, #e6e6e6);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+	cursor: pointer;
+}
+
+.dsa-xp-toast-icon {
+	color: var(--text-on-orange, #f5b84b);
+	font-size: 20px;
+	line-height: 1;
+}
+
+.dsa-xp-toast-body {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.dsa-xp-toast-body strong {
+	color: var(--text-on-orange, #f5b84b);
+	font-size: 17px;
+	font-variant-numeric: tabular-nums;
+	font-weight: 700;
+	line-height: 1.2;
+}
+
+.dsa-xp-toast-body span {
+	color: var(--text-muted, #999);
+	font-size: 12px;
+}
+
+.dsa-xp-toast-enter-active,
+.dsa-xp-toast-leave-active {
+	transition:
+		opacity 0.25s ease,
+		transform 0.25s ease;
+}
+
+.dsa-xp-toast-enter-from,
+.dsa-xp-toast-leave-to {
+	opacity: 0;
+	transform: translateY(12px);
+}
+
 @container (max-width: 520px) {
 	.cp-header {
 		padding: 10px 12px;
@@ -1982,9 +2988,31 @@ defineExpose({
 		animation-duration: 2s;
 	}
 
+	.cp-solution-spinner {
+		animation-duration: 2s;
+	}
+
 	.cp-chevron,
 	.cp-btn {
 		transition: none;
+	}
+
+	.cp-solution-modal-fade-enter-active,
+	.cp-solution-modal-fade-leave-active {
+		transition: none;
+	}
+
+	.dsa-xp-toast-enter-active,
+	.dsa-xp-toast-leave-active {
+		transition: none;
+	}
+}
+
+@media (max-width: 480px) {
+	.dsa-xp-toast {
+		right: 12px;
+		bottom: 12px;
+		left: 12px;
 	}
 }
 </style>

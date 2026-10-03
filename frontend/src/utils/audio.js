@@ -1,8 +1,8 @@
 import AudioBlock from '@/components/AudioBlock.vue'
-import UploadPlugin from '@/components/UploadPlugin.vue'
-import { registerDirectives } from '@/directives'
-import { h, createApp } from 'vue'
+import { createApp, h } from 'vue'
 import { Volume2 } from 'lucide-vue-next'
+import { call } from 'frappe-ui'
+import { registerDirectives } from '@/directives'
 import translationPlugin from '../translation'
 
 export class Audio {
@@ -39,61 +39,129 @@ export class Audio {
 	render() {
 		this.wrapper = document.createElement('div')
 
-		if (this.data.file_url) {
-			this.renderAudio(this.data)
+		if (this.data.audio) {
+			this.renderAudio()
 		} else if (!this.readOnly) {
-			this.renderUploader()
+			this.renderSelector()
 		}
 
 		return this.wrapper
 	}
 
-	renderUploader() {
-		const app = createApp(UploadPlugin, {
-			uploadContext: this.config,
+	async renderSelector() {
+		this.wrapper.innerHTML = `
+			<div class="border rounded-lg p-4">
+				<div class="text-sm font-medium mb-2">
+					Audio
+				</div>
 
-			onFileUploaded: (file) => {
-				const audioTypes = ['mp3', 'wav', 'ogg']
+				<select
+					class="audio-select w-full border rounded px-3 py-2 bg-transparent"
+				>
+					<option value="">Loading audio...</option>
+				</select>
+			</div>
+		`
 
-				if (!audioTypes.includes(file.file_type?.toLowerCase())) {
-					return
+		const select = this.wrapper.querySelector('.audio-select')
+
+		try {
+			const result = await call('frappe.client.get_list', {
+				doctype: 'Audio',
+				fields: JSON.stringify([
+					'name',
+					'title',
+					'audio',
+				]),
+				order_by: 'title asc',
+				limit_page_length: 100,
+			})
+
+			console.log('Audio records:', result)
+
+			const audioRecords = Array.isArray(result)
+				? result
+				: result?.message || []
+
+			select.innerHTML = `
+				<option value="">Select audio</option>
+			`
+
+			audioRecords.forEach((audio) => {
+				const option = document.createElement('option')
+
+				option.value = audio.name
+				option.textContent = audio.title || audio.name
+
+				if (audio.name === this.data.audio) {
+					option.selected = true
 				}
 
-				this.data.file_url = file.file_url
-				this.data.file_type = file.file_type
+				select.appendChild(option)
+			})
 
-				this.renderAudio(this.data)
-			},
-		})
+			select.addEventListener('change', (event) => {
+				this.data.audio = event.target.value
+			})
+		} catch (error) {
+			console.error('Failed to load Audio records:', error)
 
-		registerDirectives(app)
-		app.use(translationPlugin)
-		app.mount(this.wrapper)
-
-		this.app = app
+			select.innerHTML = `
+				<option value="">
+					Failed to load audio
+				</option>
+			`
+		}
 	}
 
-	renderAudio(file) {
-		const app = createApp(AudioBlock, {
-			file: file.file_url,
-		})
+	async renderAudio() {
+		try {
+			const result = await call('frappe.client.get', {
+				doctype: 'Audio',
+				name: this.data.audio,
+			})
 
-		registerDirectives(app)
-		app.use(translationPlugin)
-		app.mount(this.wrapper)
+			console.log('Selected Audio:', result)
 
-		this.app = app
-	}
+			const audio = result?.message || result
 
-	validate(savedData) {
-		return !!(savedData.file_url && savedData.file_type)
+			if (!audio?.audio) {
+				this.wrapper.innerHTML = `
+					<div class="text-sm text-gray-500 p-4">
+						Audio file not found.
+					</div>
+				`
+				return
+			}
+
+			const app = createApp(AudioBlock, {
+				file: audio.audio,
+			})
+
+			registerDirectives(app)
+			app.use(translationPlugin)
+			app.mount(this.wrapper)
+
+			this.app = app
+		} catch (error) {
+			console.error('Failed to load Audio:', error)
+
+			this.wrapper.innerHTML = `
+				<div class="text-sm text-red-500 p-4">
+					Failed to load audio.
+				</div>
+			`
+		}
 	}
 
 	save() {
 		return {
-			file_url: this.data.file_url,
-			file_type: this.data.file_type,
+			audio: this.data.audio || '',
 		}
+	}
+
+	validate(savedData) {
+		return !!savedData.audio
 	}
 
 	destroy() {

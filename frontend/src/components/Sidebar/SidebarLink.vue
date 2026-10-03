@@ -130,7 +130,7 @@ function handleClick(): void {
 			openExternal(props.link.to)
 			return
 		}
-		window.location.href = `/${props.link.to}`
+		window.location.href = new URL(`/${props.link.to}`, window.location.origin).href
 	}
 }
 
