@@ -555,13 +555,13 @@ const getSidebarItems = (forMobile = false) => {
 				{
 					label: 'Problems',
 					icon: 'Code',
-					to: 'http://lms.localhost:8002/list-problems',
+					to: 'https://learn.techvision.edu.et/list-problems',
 					activeFor: [],
 				},
 				{
 					label: 'Contests',
 					icon: 'Trophy',
-					to: 'http://lms.localhost:8002/contest-page',
+					to: 'https://learn.techvision.edu.et/contest-page',
 					activeFor: [],
 				},
 				{
@@ -595,7 +595,7 @@ const getSidebarItems = (forMobile = false) => {
 				{
 					label: 'Leaderboard',
 					icon: 'BarChart3',
-					to: 'http://lms.localhost:8002/leaderboard',
+					to: 'https://learn.techvision.edu.et/leaderboard',
 					activeFor: [],
 				},
 				{
