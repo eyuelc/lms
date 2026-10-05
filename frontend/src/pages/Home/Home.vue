@@ -113,21 +113,13 @@ const fetchEvalCount = () => {
 }
 
 const fetchXP = () => {
-	if (!user?.data?.name) return
-
-	call('frappe.client.get_list', {
-		doctype: 'XP',
-		fields: ['value'],
-		filters: {
-			user: user.data.name,
-		},
-		limit_page_length: 1,
-	})
+	call('dsa.xp.get_my_xp')
 		.then((data: any) => {
-			xpValue.value = data?.[0]?.value || 0
+			xpValue.value = data || 0
 		})
 		.catch((error: any) => {
 			console.error('XP error:', error)
+			xpValue.value = 0
 		})
 }
 

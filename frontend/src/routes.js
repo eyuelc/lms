@@ -403,8 +403,14 @@ export const routes = [
 		props: true,
 	},
 	{
+		path: '/become-an-instructor',
+		name: 'BecomeAnInstructor',
+		component: () => import('@/pages/BecomeAnInstructor.vue'),
+	},
+	{
 		path: '/:pathMatch(.*)*',
 		name: 'NotFound',
 		component: () => import('@/pages/NotFound.vue'),
 	},
+	
 ]

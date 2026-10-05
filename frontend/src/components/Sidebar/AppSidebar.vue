@@ -663,8 +663,41 @@ watch(
 	{ deep: true }
 )
 
+const addInstructorLink = (links) => {
+	const user = userResource.data
+	// Moderators and approved instructors already have course access.
+	if (!links?.length || !user || user.is_moderator || user.is_instructor) return
+
+	const isLeaderboard = (i) => i.label?.toLowerCase().includes('leaderboard')
+
+	// Match the icon format used by the neighbouring items:
+	// 'lucide-*' class strings or component-name strings.
+	const groupWithLeaderboard = links.find((g) => g.items?.some(isLeaderboard))
+	const sibling = groupWithLeaderboard?.items.find(isLeaderboard)
+	const usesClassIcons =
+		typeof sibling?.icon === 'string' && sibling.icon.startsWith('lucide-')
+
+	const item = {
+		label: 'Become an Instructor',
+		icon: usesClassIcons ? 'lucide-graduation-cap' : 'GraduationCap',
+		to: 'BecomeAnInstructor',
+		activeFor: ['BecomeAnInstructor'],
+	}
+
+	const group = groupWithLeaderboard || links[0]
+	if (group.items.some((i) => i.label === item.label)) return
+
+	const leaderboardIndex = group.items.findIndex(isLeaderboard)
+	if (leaderboardIndex >= 0) {
+		group.items.splice(leaderboardIndex + 1, 0, item)
+	} else {
+		group.items.push(item)
+	}
+}
+
 const updateSidebarLinks = () => {
 	sidebarLinks.value = getSidebarLinks()
+	addInstructorLink(sidebarLinks.value)
 	updateSidebarLinksVisibility()
 	updateUnreadCount()
 }
