@@ -127,7 +127,7 @@ function handleClick(): void {
 		showContactForm.value = true
 	} else if (props.link.to) {
 		if (props.link.to.startsWith('http')) {
-			openExternal(props.link.to)
+			window.location.href = props.link.to
 			return
 		}
 		window.location.href = new URL(`/${props.link.to}`, window.location.origin).href
